@@ -1,0 +1,35 @@
+units lj
+dimension 2
+boundary p p p
+atom_style ellipsoid 
+region t block 0 28.9 0 28.9 0 0.0289     #91.29
+lattice sq 0.0289 # 0.009129
+create_box 2 t
+create_atoms 1 random 650 123456 t
+create_atoms 2 random 350  324567 t
+pair_style lj/cut 2.5 #cutoff 2.5
+pair_coeff 1 1 1 1 # A A epsilon sigma
+pair_coeff 1 2 1.5 0.80 # A B  epsilon sigma
+pair_coeff  2 2 0.5 0.88 # B B  epsilon sigma
+pair_modify shift yes
+minimize          1.0e-4 1.0e-6 1000 1000 #minimize force and energy
+fix 1 all enforce2d
+fix 2 all enforce2d
+set type * shape 1.0 1.0 1.0
+set type * quat/random 123456
+fix step all brownian 1.0 1.0 123456 angdiff 1.0 exact
+fix active all propel/self quat 0.5
+neighbor 0.3 bin
+thermo 10000
+timestep 0.0001
+run 1000000
+
+#set dump settings
+# compute qdump all property/atom quatw quati quatj quatk #uncomment to print orientation quaternion incl next line
+
+compute qvalues all hexorder/atom nnn 4 cutoff 1.06
+dump traj all custom 50 traj_dump_young_q6.ATOM id type x y fx fy c_qvalues[*] #c_qdump[*] #uncomment for orientation
+
+reset_timestep 0
+fix step all brownian 0.25 1.0 123456 angdiff 1.0 exact
+run 50000 #tw1

@@ -1,0 +1,49 @@
+dimension 3
+boundary p p p
+
+atom_style ellipsoid
+
+#set parameters
+variable Lhalf equal 5
+
+#set-up simulation box
+region total block -${Lhalf} ${Lhalf} -${Lhalf} ${Lhalf} -${Lhalf} ${Lhalf}
+lattice sc 1.0
+create_box 2 total
+create_atoms 1 box
+
+#set cut LJ potential
+pair_style lj/cut 2.5
+pair_coeff * * 1.0 1.0
+pair_modify shift yes
+
+#set-up atom shape and random orientation
+set type * shape 1.0 1.0 1.0
+set type * density 1 #not used
+set type * quat/random 123456
+
+#set integrator
+fix step all brownian 1.0 1.0 123456 angdiff 1.0 exact
+
+#set active force
+fix active all propel/self quat 1.0
+
+# With active force there is more motion so increase bin size:
+neighbor 0.6 bin
+
+#set thermo-printing settings
+thermo_style custom cpu step dt time pe etotal fmax
+thermo 10000
+
+#set time step and run a number of time steps
+timestep 0.0001
+
+#equilibration
+run 10000
+
+#set dump settings
+compute qdump all property/atom quatw quati quatj quatk #uncomment to print orientation quaternion incl next line
+dump traj all custom 1000 traj_dump.atom id type xu yu zu #c_qdump[*] #uncomment for orientation
+
+#run
+run 10000
